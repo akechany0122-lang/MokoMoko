@@ -589,6 +589,65 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
       "ぼこぼこ": [35, 80, 40, 500, 10.0, 0.9, 15, 1.5, 0.9, 0.1, 1.0]
     };
     Object.assign(ONO_DB, EXTRA_ONO);
+    
+    // PDFのガイドラインおよびイメージ画像に基づいたオノマトペパラメータの強制上書き
+    const PDF_ONO_OVERRIDES = {
+      // 音・衝撃 (Warm 色調: 赤〜橙〜黄, Emissive高)
+      "ドーン": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どーん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どうん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "ドンドン": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どんどん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "ドン": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "どん": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "どんっ": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "ドンッ": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "バーン": [8, 95, 50, 600, 12.0, 0.7, 30, 1.6, 0.2, 0.9, 4.0],
+      "ばーん": [8, 95, 50, 600, 12.0, 0.7, 30, 1.6, 0.2, 0.9, 4.0],
+      "ドカン": [25, 95, 50, 700, 10.0, 0.8, 35, 1.5, 0.3, 0.7, 4.2],
+      "どかん": [25, 95, 50, 700, 10.0, 0.8, 35, 1.5, 0.3, 0.7, 4.2],
+      
+      // 速さ・鋭さ (Cool/Electric 色調: 青〜白)
+      "シュッ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "シュ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "しゅっ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "しゅ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "ピュッ": [180, 90, 65, 400, 16.0, 0.4, 25, 1.4, 0.1, 0.8, 3.0],
+      "ぴゅっ": [180, 90, 65, 400, 16.0, 0.4, 25, 1.4, 0.1, 0.8, 3.0],
+      "ビュッ": [195, 95, 55, 500, 12.0, 0.3, 22, 1.6, 0.05, 0.95, 3.8],
+      "びゅっ": [195, 95, 55, 500, 12.0, 0.3, 22, 1.6, 0.05, 0.95, 3.8],
+      
+      // 柔らかさ・流れ (Monochrome/Cool: 白〜薄灰, 薄紫)
+      "ふわふわ": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      "ふわ": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      "ふわり": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      
+      // 触感・食感 (Warm: 暖白〜橙)
+      "もちもち": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "もち": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "ぷにぷに": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "ぷに": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      
+      // 動き・回転 (Electric: マゼンタ〜青)
+      "くるくる": [300, 95, 55, 500, 6.0, 0.5, 30, 1.6, 0.15, 0.8, 2.5],
+      "ぐるぐる": [300, 95, 55, 500, 6.0, 0.5, 30, 1.6, 0.15, 0.8, 2.5],
+      
+      // 水・液体 (Cool: 青〜白)
+      "ザブザブ": [210, 85, 60, 450, 5.0, 1.0, 20, 1.5, 0.01, 0.1, 1.5],
+      "ざぶざぶ": [210, 85, 60, 450, 5.0, 1.0, 20, 1.5, 0.01, 0.1, 1.5],
+      "ポタポタ": [200, 80, 70, 300, 2.5, 0.3, 15, 1.4, 0.05, 0.05, 1.0],
+      "ぽたぽた": [200, 80, 70, 300, 2.5, 0.3, 15, 1.4, 0.05, 0.05, 1.0],
+      
+      // ザラつき・粗さ (Monochrome/Warm: 灰〜茶)
+      "ざらざら": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      "ざら": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      "ごつごつ": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      
+      // 感情 (Warm: 赤〜ピンク)
+      "ドキドキ": [345, 90, 55, 400, 2.0, 0.4, 16, 1.45, 0.2, 0.1, 2.0],
+      "どきどき": [345, 90, 55, 400, 2.0, 0.4, 16, 1.45, 0.2, 0.1, 2.0]
+    };
+    Object.assign(ONO_DB, PDF_ONO_OVERRIDES);
 
     // === 特徴量抽出 ===
     function findOnoParams(text){
@@ -696,6 +755,7 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         word,
         p,
         category,
+        dom: category,
         avgRms,
         maxRms,
         avgVel,
@@ -848,7 +908,7 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         let enhancedMetal = Math.min(1.0, metal + velFactor * 0.1);
         let enhancedRough = Math.max(0.0, rough - rmsFactor * 0.05);
         
-        switch(f.dom) {
+        switch(f.category) {
           case 'impact': this._buildImpact(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
           case 'sharp':  this._buildSharp(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
           case 'spiral': this._buildSpiral(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
@@ -1018,81 +1078,6 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
           freq: (0.01 + freq * 0.008) * (0.85 + Math.random() * 0.3),
           amp: (2.0 + amp * 12) * (0.85 + Math.random() * 0.3)
         });
-      }, Math.min(5.0, emis * (0.8 + Math.random() * 0.4) + Math.random() * 0.3));
-        ior = Math.max(1.0, Math.min(3.0, ior + (Math.random() * 0.3 - 0.15)));
-        
-        // Ensure colors are vibrant
-        const hue = h/360;
-        const sat = Math.max(s/100, 0.5); 
-        const lit = Math.max(l/100, 0.4);
-        
-        let baseColor = new THREE.Color().setHSL(hue, sat, lit);
-        this.scene.environment = this._createEnvMap(baseColor);
-        
-        let scaleMult = 1.0 + Math.min(f.avgSpread*2, 2.0);
-        let baseR = (50 + (div/60)*50) * scaleMult;
-        
-        let pc = new THREE.Vector3(), vpc=0;
-        f.pathPts.forEach(pt=>{if(pt.hasL){pc.add(pt.posL);vpc++;}if(pt.hasR){pc.add(pt.posR);vpc++;}});
-        if(vpc>0) pc.divideScalar(vpc);
-        else pc.set(0,0,0);
-        
-        console.log(`[gen] word=${f.word} dom=${f.dom} scaleMult=${scaleMult.toFixed(2)} baseR=${baseR.toFixed(1)}`);
-        
-        this.scene.background = new THREE.Color(0x050508);
-        
-        let envGroup = new THREE.Group(); this.scene.add(envGroup);
-        let mainGroup = new THREE.Group(); this.scene.add(mainGroup);
-        
-        // Strong Lighting
-        let hemiLight = new THREE.HemisphereLight(0xffffff, 0x222233, 1.2); 
-        this.scene.add(hemiLight);
-        let dirLight = new THREE.DirectionalLight(0xffffff, 2.5); 
-        dirLight.position.set(100, 300, 100); 
-        this.scene.add(dirLight);
-        let colorLight = new THREE.DirectionalLight(baseColor, 2.0);
-        colorLight.position.set(-200, 50, -200);
-        this.scene.add(colorLight);
-        
-        let pointLight = new THREE.PointLight(baseColor, (emis+1)*3, 2000); 
-        pointLight.position.copy(pc).add(new THREE.Vector3(0,50,0)); 
-        mainGroup.add(pointLight);
-
-        // 軌跡リボン（3D Hand Ribbon）を全てのオノマトペで描画し、オノマトペ固有の質感パラメータを割り当てる
-        this._buildHandRibbon(mainGroup, f, baseColor, metal, rough, emis, ior, freq, amp);
-        
-        switch(f.dom) {
-          case 'impact': this._buildImpact(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'sharp':  this._buildSharp(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'spiral': this._buildSpiral(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'liquid': this._buildLiquid(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'elastic':this._buildElastic(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'rough':  this._buildRough(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'emotion':this._buildEmotion(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'soft':   this._buildSoft(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          
-          case 'glowring':    this._buildGlowRing(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'pixelgrid':   this._buildPixelGrid(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'nebula':      this._buildNebula(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          case 'fractaltree': this._buildFractalTree(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-          
-          default:       this._buildSoft(mainGroup, envGroup, pc, baseR, baseColor, f, metal, rough, emis); break;
-        }
-
-        // Camera fit ONLY using mainGroup
-        mainGroup.add(new THREE.Object3D());
-        let box3 = new THREE.Box3().setFromObject(mainGroup);
-        let bc = new THREE.Vector3(), bs = new THREE.Vector3();
-        if(!box3.isEmpty()){box3.getCenter(bc);box3.getSize(bs);}else{bc.copy(pc);}
-        this.controls.target.copy(bc);
-        
-        // Closer framing
-        let camDist = Math.max(150, Math.max(bs.x, bs.y, bs.z)*1.0);
-        this.camera.position.set(bc.x, bc.y+camDist*0.4, bc.z+camDist*1.2);
-        this.camera.lookAt(bc);
-        this.controls.update(); this.camera.updateProjectionMatrix();
-        
-        this.animate = this.animate.bind(this); this.animate();
       }
 
       _addStars(envGroup, cnt, hexColor) {
