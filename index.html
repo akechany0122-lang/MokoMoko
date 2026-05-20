@@ -826,8 +826,17 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         const ctx = canvas.getContext('2d');
         const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
         
-        const colTop = '#' + color.clone().multiplyScalar(1.5).getHexString();
-        const colBottom = '#' + color.clone().multiplyScalar(0.2).getHexString();
+        const cTop = color.clone().multiplyScalar(1.5);
+        cTop.r = Math.max(0, Math.min(1, cTop.r));
+        cTop.g = Math.max(0, Math.min(1, cTop.g));
+        cTop.b = Math.max(0, Math.min(1, cTop.b));
+        const colTop = '#' + cTop.getHexString();
+        
+        const cBottom = color.clone().multiplyScalar(0.2);
+        cBottom.r = Math.max(0, Math.min(1, cBottom.r));
+        cBottom.g = Math.max(0, Math.min(1, cBottom.g));
+        cBottom.b = Math.max(0, Math.min(1, cBottom.b));
+        const colBottom = '#' + cBottom.getHexString();
         grad.addColorStop(0, colTop);
         grad.addColorStop(0.5, '#050508');
         grad.addColorStop(1, colBottom);
@@ -1095,133 +1104,6 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
           hash = word.charCodeAt(i) + ((hash << 5) - hash);
         }
         return Math.abs(hash % 1000) / 1000;
-      }
-
-      _buildHandRibbon(mainGroup, f, baseColor) {
-        if (!f.pathPts || f.pathPts.length < 3) return;
-        const hue = f.p[0]/360;
-        const group = new THREE.Group();
-        
-        // 1. 左右の手の軌跡をつなぐ 3D リボンメッシュ
-        const geom = new THREE.BufferGeometry();
-        const vertices = [];
-        const colors = [];
-        const indices = [];
-        
-        f.pathPts.forEach((pt, i) => {
-          let posL = pt.posL;
-          let posR = pt.posR;
-          vertices.push(posL.x, posL.y, posL.z);
-          vertices.push(posR.x, posR.y, posR.z);
-          
-          let ratio = i / f.pathPts.length;
-          let cL = new THREE.Color().setHSL((hue + ratio * 0.3) % 1, 1.0, 0.6);
-          let cR = new THREE.Color().setHSL((hue + ratio * 0.3 + 0.15) % 1, 1.0, 0.5);
-          colors.push(cL.r, cL.g, cL.b);
-          colors.push(cR.r, cR.g, cR.b);
-          
-          if (i > 0) {
-            let prev = (i - 1) * 2;
-            let curr = i * 2;
-            indices.push(prev, prev + 1, curr);
-            indices.push(prev + 1, curr + 1, curr);
-            indices.push(prev, curr, prev + 1);
-            indices.push(prev + 1, curr, curr + 1);
-          }
-        });
-        geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geom.setIndex(indices);
-        geom.computeVertexNormals();
-        
-        const mat = new THREE.MeshPhysicalMaterial({
-          vertexColors: true,
-          roughness: 0.05,
-          metalness: 0.95,
-          clearcoat: 1.0,
-          clearcoatRoughness: 0.05,
-          transmission: 0.2,
-          opacity: 0.9,
-          transparent: true,
-          iridescence: 1.0,
-          iridescenceIOR: 1.8,
-          iridescenceThicknessRange: [100, 400],
-          side: THREE.DoubleSide
-        });
-        const ribbonMesh = new THREE.Mesh(geom, mat);
-        group.add(ribbonMesh);
-        
-        // 2. 左手・右手それぞれの滑らかなネオンチューブ
-        const ptsL = f.pathPts.map(p => p.posL);
-        const ptsR = f.pathPts.map(p => p.posR);
-        const seedVal = this._getSeed(f.word);
-        
-        const createTube = (pts, offsetColor) => {
-          const curve = new THREE.CatmullRomCurve3(pts);
-          const rad = 2.0 + f.maxRms * 12 + seedVal * 3;
-          const tubeGeom = new THREE.TubeGeometry(curve, 100, rad, 8, false);
-          
-          // チューブをノイズで有機的に歪ませる
-          const pos = tubeGeom.attributes.position;
-          const vec = new THREE.Vector3();
-          for(let i=0; i<pos.count; i++) {
-            vec.fromBufferAttribute(pos, i);
-            let noise = Math.sin(vec.x * 0.05 + seedVal * 10) * Math.cos(vec.z * 0.05 + seedVal * 10) * 2.5;
-            vec.x += noise; vec.y += noise;
-            pos.setXYZ(i, vec.x, vec.y, vec.z);
-          }
-          tubeGeom.computeVertexNormals();
-          
-          const tubeMat = new THREE.MeshPhysicalMaterial({
-            color: offsetColor,
-            emissive: offsetColor,
-            emissiveIntensity: 1.2 + f.energy * 3.0,
-            roughness: 0.05,
-            metalness: 0.95,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.05,
-            transmission: 0.4,
-            transparent: true,
-            opacity: 0.9,
-            iridescence: 0.8,
-            iridescenceIOR: 1.6
-          });
-          group.add(new THREE.Mesh(tubeGeom, tubeMat));
-        };
-        
-        createTube(ptsL, new THREE.Color().setHSL(hue, 1.0, 0.6));
-        createTube(ptsR, new THREE.Color().setHSL((hue + 0.5) % 1, 1.0, 0.6));
-        
-        // 3. 左右を結ぶネオン接続線
-        const webGeom = new THREE.BufferGeometry();
-        const webVertices = [];
-        const webColors = [];
-        f.pathPts.forEach((pt, i) => {
-          if (i % 2 === 0) {
-            webVertices.push(pt.posL.x, pt.posL.y, pt.posL.z);
-            webVertices.push(pt.posR.x, pt.posR.y, pt.posR.z);
-            let c = new THREE.Color().setHSL((hue + 0.25) % 1, 1.0, 0.7);
-            webColors.push(c.r, c.g, c.b, c.r, c.g, c.b);
-          }
-        });
-        webGeom.setAttribute('position', new THREE.Float32BufferAttribute(webVertices, 3));
-        webGeom.setAttribute('color', new THREE.Float32BufferAttribute(webColors, 3));
-        const webMat = new THREE.LineBasicMaterial({
-          vertexColors: true,
-          transparent: true,
-          opacity: 0.5 + f.energy * 0.5,
-          blending: THREE.AdditiveBlending
-        });
-        group.add(new THREE.LineSegments(webGeom, webMat));
-        
-        mainGroup.add(group);
-        this.objects.push({
-          mesh: ribbonMesh,
-          isRibbon: true,
-          baseGeo: geom.clone(),
-          freq: 0.04 + seedVal * 0.05,
-          amp: 4 + f.energy * 12
-        });
       }
 
       _buildImpact(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
