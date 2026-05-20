@@ -271,6 +271,46 @@
   <div id="loading">GENERATING SPACE...</div>
 
   <script type="module">
+    // エラーハンドリング・画面オーバーレイ表示（デバッグ用）
+
+    // エラーハンドリング・画面オーバーレイ表示（デバッグ用・無限ループ絶対防止＆文字表示結合修正版）
+    function showErrorOverlay(error) {
+      if (!error) error = 'Unknown error (null/undefined)';
+      const msg = error.message || (typeof error === 'object' ? JSON.stringify(error) : error);
+      const stack = error.stack || 'N/A';
+      
+      // すでにエラーオーバーレイが表示中の場合は多重起動や無限ループを避ける
+      if (window.__error_overlay_showing__) return;
+      window.__error_overlay_showing__ = true;
+
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.top = '0';
+      div.style.left = '0';
+      div.style.width = '100vw';
+      div.style.height = '100vh';
+      div.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+      div.style.color = 'white';
+      div.style.zIndex = '9999999';
+      div.style.padding = '30px';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '14px';
+      div.style.whiteSpace = 'pre-wrap';
+      div.style.overflow = 'auto';
+      div.innerHTML = '<h2>[MokoMoko] JS Error Detected</h2>' +
+                      '<p style="font-size:16px;color:#ffcccc;"><b>Message:</b> ' + msg + '</p>' +
+                      '<p><b>Stack Trace:</b><br>' + stack + '</p>';
+      document.body.appendChild(div);
+    }
+
+    window.onerror = function(message, source, lineno, colno, error) {
+      showErrorOverlay(error || `\${message} at \${source}:\${lineno}:\${colno}`);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      showErrorOverlay(event.reason);
+    });
+
     import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
 
     // --- グローバル状態 ---
@@ -589,6 +629,65 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
       "ぼこぼこ": [35, 80, 40, 500, 10.0, 0.9, 15, 1.5, 0.9, 0.1, 1.0]
     };
     Object.assign(ONO_DB, EXTRA_ONO);
+    
+    // PDFのガイドラインおよびイメージ画像に基づいたオノマトペパラメータの強制上書き
+    const PDF_ONO_OVERRIDES = {
+      // 音・衝撃 (Warm 色調: 赤〜橙〜黄, Emissive高)
+      "ドーン": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どーん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どうん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "ドンドン": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "どんどん": [18, 95, 50, 800, 8.0, 0.8, 40, 1.7, 0.3, 0.6, 4.5],
+      "ドン": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "どん": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "どんっ": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "ドンッ": [15, 95, 45, 600, 4.0, 0.5, 30, 1.8, 0.2, 0.8, 3.0],
+      "バーン": [8, 95, 50, 600, 12.0, 0.7, 30, 1.6, 0.2, 0.9, 4.0],
+      "ばーん": [8, 95, 50, 600, 12.0, 0.7, 30, 1.6, 0.2, 0.9, 4.0],
+      "ドカン": [25, 95, 50, 700, 10.0, 0.8, 35, 1.5, 0.3, 0.7, 4.2],
+      "どかん": [25, 95, 50, 700, 10.0, 0.8, 35, 1.5, 0.3, 0.7, 4.2],
+      
+      // 速さ・鋭さ (Cool/Electric 色調: 青〜白)
+      "シュッ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "シュ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "しゅっ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "しゅ": [200, 90, 60, 500, 14.0, 0.3, 20, 1.5, 0.1, 0.9, 3.5],
+      "ピュッ": [180, 90, 65, 400, 16.0, 0.4, 25, 1.4, 0.1, 0.8, 3.0],
+      "ぴゅっ": [180, 90, 65, 400, 16.0, 0.4, 25, 1.4, 0.1, 0.8, 3.0],
+      "ビュッ": [195, 95, 55, 500, 12.0, 0.3, 22, 1.6, 0.05, 0.95, 3.8],
+      "びゅっ": [195, 95, 55, 500, 12.0, 0.3, 22, 1.6, 0.05, 0.95, 3.8],
+      
+      // 柔らかさ・流れ (Monochrome/Cool: 白〜薄灰, 薄紫)
+      "ふわふわ": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      "ふわ": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      "ふわり": [30, 15, 85, 300, 1.0, 0.2, 16, 1.35, 0.1, 0.1, 0.5],
+      
+      // 触感・食感 (Warm: 暖白〜橙)
+      "もちもち": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "もち": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "ぷにぷに": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      "ぷに": [25, 50, 80, 350, 3.0, 0.5, 18, 1.45, 0.4, 0.1, 1.0],
+      
+      // 動き・回転 (Electric: マゼンタ〜青)
+      "くるくる": [300, 95, 55, 500, 6.0, 0.5, 30, 1.6, 0.15, 0.8, 2.5],
+      "ぐるぐる": [300, 95, 55, 500, 6.0, 0.5, 30, 1.6, 0.15, 0.8, 2.5],
+      
+      // 水・液体 (Cool: 青〜白)
+      "ザブザブ": [210, 85, 60, 450, 5.0, 1.0, 20, 1.5, 0.01, 0.1, 1.5],
+      "ざぶざぶ": [210, 85, 60, 450, 5.0, 1.0, 20, 1.5, 0.01, 0.1, 1.5],
+      "ポタポタ": [200, 80, 70, 300, 2.5, 0.3, 15, 1.4, 0.05, 0.05, 1.0],
+      "ぽたぽた": [200, 80, 70, 300, 2.5, 0.3, 15, 1.4, 0.05, 0.05, 1.0],
+      
+      // ザラつき・粗さ (Monochrome/Warm: 灰〜茶)
+      "ざらざら": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      "ざら": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      "ごつごつ": [35, 25, 45, 600, 8.0, 0.7, 24, 1.6, 0.9, 0.3, 0.5],
+      
+      // 感情 (Warm: 赤〜ピンク)
+      "ドキドキ": [345, 90, 55, 400, 2.0, 0.4, 16, 1.45, 0.2, 0.1, 2.0],
+      "どきどき": [345, 90, 55, 400, 2.0, 0.4, 16, 1.45, 0.2, 0.1, 2.0]
+    };
+    Object.assign(ONO_DB, PDF_ONO_OVERRIDES);
 
     // === 特徴量抽出 ===
     function findOnoParams(text){
@@ -645,10 +744,17 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         if(d.lw||d.rw){
           let posL=d.lw?d.lw.clone():new THREE.Vector3();
           let posR=d.rw?d.rw.clone():new THREE.Vector3();
+          if(isNaN(posL.x) || isNaN(posL.y) || isNaN(posL.z)) posL.set(0,0,0);
+          if(isNaN(posR.x) || isNaN(posR.y) || isNaN(posR.z)) posR.set(0,0,0);
           if(!lastP||(d.lw&&lastP.distanceTo(posL)>2)){pathPts.push({posL,posR,hasL:!!d.lw,hasR:!!d.rw});if(d.lw)lastP=posL.clone();}
         }
       });
       let n=recordData.length||1;avgRms/=n;avgVel/=n;avgSpread/=n;
+      avgRms = isNaN(avgRms) ? 0 : avgRms;
+      avgVel = isNaN(avgVel) ? 0 : avgVel;
+      avgSpread = isNaN(avgSpread) ? 0 : avgSpread;
+      maxRms = isNaN(maxRms) ? 0 : maxRms;
+      maxVel = isNaN(maxVel) ? 0 : maxVel;
       let match = findOnoParams(allText);
       let p, word = '';
       
@@ -696,6 +802,7 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         word,
         p,
         category,
+        dom: category,
         avgRms,
         maxRms,
         avgVel,
@@ -756,227 +863,938 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         this.objects = [];
       }
 
+      _createEnvMap(color) {
+        try {
+          const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+          pmremGenerator.compileEquirectangularShader();
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 128;
+          const ctx = canvas.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          
+          const cTop = color.clone().multiplyScalar(1.5);
+          cTop.r = Math.max(0, Math.min(1, cTop.r));
+          cTop.g = Math.max(0, Math.min(1, cTop.g));
+          cTop.b = Math.max(0, Math.min(1, cTop.b));
+          const colTop = cTop.getStyle ? cTop.getStyle() : '#' + cTop.getHexString().padStart(6, '0');
+          
+          const cBottom = color.clone().multiplyScalar(0.2);
+          cBottom.r = Math.max(0, Math.min(1, cBottom.r));
+          cBottom.g = Math.max(0, Math.min(1, cBottom.g));
+          cBottom.b = Math.max(0, Math.min(1, cBottom.b));
+          const colBottom = cBottom.getStyle ? cBottom.getStyle() : '#' + cBottom.getHexString().padStart(6, '0');
+          
+          grad.addColorStop(0, colTop);
+          grad.addColorStop(0.5, '#050508');
+          grad.addColorStop(1, colBottom);
+          
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          
+          const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+          texture.dispose();
+          pmremGenerator.dispose();
+          
+          return envMap;
+        } catch (e) {
+          console.warn("Failed to create envMap, falling back to null:", e);
+          return null;
+        }
+      }
+
       generate() {
         this.clear();
-        
         const f = extractFeatures();
-
-        // --- 1. 背景の動的合成 ---
-        let bgLightness = 0.1;
-        let bgSaturation = 0.2;
-        if (f.softness > Math.max(f.sharpness, f.roughness, f.flow)) {
-            bgLightness = 0.85; // 柔らかい時はパステル調の明るい背景
-            bgSaturation = 0.1;
-        } else if (f.sharpness > Math.max(f.roughness, f.flow) && f.maxRms > 0.3) {
-            bgLightness = 0.9; // 鋭いインパクト時は真っ白に近い背景
-            bgSaturation = 0.05;
-        } else if (f.flow > Math.max(f.sharpness, f.roughness)) {
-            bgLightness = 0.05; // フロー時はネオンを際立たせる暗い背景
-        }
+        let [h,s,l,vtx,freq,amp,div,ior,rough,metal,emis] = f.p;
         
-        this.scene.background = new THREE.Color().setHSL(f.hue, bgSaturation, bgLightness);
-        this.scene.fog = new THREE.FogExp2(this.scene.background, 0.002);
-
-        // 照明
-        const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-        this.scene.add(ambient);
+        // オノマトペと手の動きをより大袈裟に反映
+        ior = Math.max(1.0, Math.min(3.0, ior + (Math.random() * 0.3 - 0.15)));
         
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        mainLight.position.set(30, 50, 40);
-        this.scene.add(mainLight);
+        const hue = h/360;
+        const sat = Math.max(s/100, 0.7); // 鮮やかさを誇張
+        const lit = Math.max(l/100, 0.5); // 明るさを誇張
         
-        const rimLight = new THREE.DirectionalLight(new THREE.Color().setHSL((f.hue+0.5)%1, 1, 0.5), 2.0);
-        rimLight.position.set(-30, -20, -50);
-        this.scene.add(rimLight);
-
-        // 空間全体をまとめるグループ
-        let group = new THREE.Group();
-        this.scene.add(group);
-        this.objects.push({ mesh: group, ry: 0.002, rx: 0.001 });
-
-        // --- Layer 1: VOXEL TERRAIN (Roughnessが強い時) ---
-        // 添付画像の「ボクセル都市/山」のような空間
-        if (f.roughness > 0.1) {
-            let count = 20; // 20x20のグリッド
-            let size = 15;
-            let terrainGeo = new THREE.BoxGeometry(size*0.9, 1, size*0.9);
-            let terrainMat = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color().setHSL(f.hue, 0.8, 0.4),
-                roughness: 0.9, metalness: 0.2, clearcoat: 0.1
-            });
-            let instMesh = new THREE.InstancedMesh(terrainGeo, terrainMat, count * count);
-            let dummy = new THREE.Object3D();
-            let idx = 0;
-            for(let x=0; x<count; x++) {
-                for(let z=0; z<count; z++) {
-                    let px = (x - count/2) * size;
-                    let pz = (z - count/2) * size;
-                    let d = Math.sqrt(px*px + pz*pz);
-                    let h = Math.random() * 150 * f.roughness * Math.max(0, (1 - d/300));
-                    
-                    // 軌跡の近くは隆起する
-                    f.pathPts.forEach(pt => {
-                        let distL = Math.sqrt(Math.pow(pt.posL.x - px, 2) + Math.posL.z - pz, 2);
-                        if(distL < 60) h += (60 - distL) * pt.rms * f.roughness * 2;
-                        let distR = Math.sqrt(Math.pow(pt.posR.x - px, 2) + Math.posR.z - pz, 2);
-                        if(distR < 60) h += (60 - distR) * pt.rms * f.roughness * 2;
-                    });
-                    
-                    dummy.position.set(px, h/2 - 80, pz);
-                    dummy.scale.set(1, Math.max(1, h), 1);
-                    dummy.updateMatrix();
-                    instMesh.setMatrixAt(idx, dummy.matrix);
-                    
-                    let c = new THREE.Color().setHSL((f.hue + h*0.002)%1, 0.8, 0.2 + (h/300));
-                    instMesh.setColorAt(idx, c);
-                    idx++;
-                }
-            }
-            group.add(instMesh);
-        }
-
-        // --- Layer 2: EXPLOSION SHARDS (Sharpnessが強い時) ---
-        // 添付画像の「破片が弾けるような」空間
-        if (f.sharpness > 0.1) {
-            let shardGeo = new THREE.TetrahedronGeometry(1, 0);
-            let shardMat = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color().setHSL((f.hue + 0.1)%1, 1.0, 0.5),
-                metalness: 0.9, roughness: 0.1,
-                emissive: new THREE.Color().setHSL(f.hue, 1.0, 0.2)
-            });
-            let shardCount = Math.floor(f.sharpness * 300);
-            let instMesh = new THREE.InstancedMesh(shardGeo, shardMat, shardCount);
-            let dummy = new THREE.Object3D();
-            
-            // 軌跡の中心または原点から爆発
-            let center = new THREE.Vector3();
-            if(f.pathPts.length > 0) center.copy(f.pathPts[Math.floor(f.pathPts.length/2)].posL);
-            
-            for(let i=0; i<shardCount; i++) {
-                let dir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
-                let dist = Math.random() * 200 * f.sharpness;
-                dummy.position.copy(center).add(dir.multiplyScalar(dist));
-                
-                // 鋭く細長いスケール
-                let sx = 2 + Math.random() * 5 * f.sharpness;
-                let sy = 20 + Math.random() * 80 * f.sharpness;
-                let sz = 2 + Math.random() * 5 * f.sharpness;
-                
-                dummy.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
-                dummy.scale.set(sx, sy, sz);
-                dummy.updateMatrix();
-                instMesh.setMatrixAt(i, dummy.matrix);
-                
-                let isBlack = Math.random() > 0.7;
-                let c = isBlack ? new THREE.Color(0x111111) : (Math.random() > 0.5 ? new THREE.Color(0xffffff) : new THREE.Color().setHSL((f.hue+0.5)%1,1,0.5));
-                instMesh.setColorAt(i, c);
-            }
-            group.add(instMesh);
-            this.objects.push({ mesh: instMesh, ry: 0.005 });
-        }
-
-        // --- Layer 3: FLOWING NEON TUBES (Flowが強い時) ---
-        // 添付画像の「滑らかなネオンチューブ」の空間
-        if (f.flow > 0.1 && f.pathPts.length > 3) {
-            let ptsL = f.pathPts.map(p => p.posL);
-            let curveL = new THREE.CatmullRomCurve3(ptsL);
-            
-            let numTubes = Math.floor(1 + f.flow * 5);
-            for(let t=0; t<numTubes; t++) {
-                // 中心軌跡を少しオフセットして複数本のチューブを並行に走らせる
-                let offset = new THREE.Vector3((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
-                let offsetPts = ptsL.map(p => p.clone().add(offset));
-                let offsetCurve = new THREE.CatmullRomCurve3(offsetPts);
-                
-                let radius = 2 + Math.random() * 10 * f.flow;
-                let tubeGeo = new THREE.TubeGeometry(offsetCurve, 100, radius, 8, false);
-                let tubeMat = new THREE.MeshPhysicalMaterial({
-                    color: new THREE.Color().setHSL((f.hue - (t*0.1))%1, 1.0, 0.6),
-                    emissive: new THREE.Color().setHSL((f.hue - (t*0.1))%1, 1.0, 0.4),
-                    emissiveIntensity: 0.5, clearcoat: 1.0, roughness: 0.1
-                });
-                let tube = new THREE.Mesh(tubeGeo, tubeMat);
-                group.add(tube);
-            }
-        }
-
-        // --- Layer 4: ORGANIC WIREFRAME CLOUD (Softnessが強い時) ---
-        // 添付画像の「柔らかく有機的な網目」の空間
-        if (f.softness > 0.1) {
-            let cloudGeo = new THREE.IcosahedronGeometry(60 + f.softness*40, 4);
-            let pos = cloudGeo.attributes.position;
-            let vec = new THREE.Vector3();
-            // ノイズによる有機的な変形
-            for(let i=0; i<pos.count; i++) {
-                vec.fromBufferAttribute(pos, i);
-                let noise = Math.sin(vec.x*0.05) * Math.cos(vec.y*0.05) * Math.sin(vec.z*0.05);
-                let disp = noise * 50 * f.softness;
-                vec.add(vec.clone().normalize().multiplyScalar(disp));
-                pos.setXYZ(i, vec.x, vec.y, vec.z);
-            }
-            cloudGeo.computeVertexNormals();
-            
-            let cloudMat = new THREE.MeshPhysicalMaterial({
-                color: new THREE.Color().setHSL(f.hue, 0.5, 0.9),
-                transmission: 0.9, opacity: 1, transparent: true,
-                roughness: 0.1, ior: 1.2,
-                wireframe: f.softness > 0.4
-            });
-            let cloud = new THREE.Mesh(cloudGeo, cloudMat);
-            group.add(cloud);
-            this.objects.push({ mesh: cloud, rx: 0.003, ry: -0.002 });
-        }
-
-        // --- 5. ユーザーの動きの軌跡 (Particle Trace) ---
-        // 生成された空間と自身の身体の動きを結びつけるために軌跡の光を描画
-        let traceGeo = new THREE.BufferGeometry();
-        let tracePts = [];
-        let traceColors = [];
-        f.pathPts.forEach((pt, i) => {
-            if(pt.hasL) {
-                tracePts.push(pt.posL.x, pt.posL.y, pt.posL.z);
-                let c = new THREE.Color().setHSL((f.hue + i/f.pathPts.length)%1, 1, 0.8);
-                traceColors.push(c.r, c.g, c.b);
-            }
-            if(pt.hasR) {
-                tracePts.push(pt.posR.x, pt.posR.y, pt.posR.z);
-                let c = new THREE.Color().setHSL((f.hue + i/f.pathPts.length)%1, 1, 0.8);
-                traceColors.push(c.r, c.g, c.b);
-            }
+        let baseColor = new THREE.Color().setHSL(hue, sat, lit);
+        // this.scene.environment = null; // PMREM WebGL crash avoidance
+        
+        // 手の広がり、速度、声の大きさを大袈裟に乗算
+        let spreadFactor = isNaN(f.avgSpread) ? 0 : Math.min(f.avgSpread * 3.5, 5.0);
+        let velFactor = isNaN(f.maxVel) ? 0 : Math.min(f.maxVel * 0.3, 4.0);
+        let rmsFactor = isNaN(f.maxRms) ? 0 : Math.min(f.maxRms * 6.0, 4.0);
+        spreadFactor = isNaN(spreadFactor) ? 0 : spreadFactor;
+        velFactor = isNaN(velFactor) ? 0 : velFactor;
+        rmsFactor = isNaN(rmsFactor) ? 0 : rmsFactor;
+        
+        let scaleMult = 1.0 + spreadFactor + velFactor + rmsFactor;
+        scaleMult = isNaN(scaleMult) ? 1.0 : scaleMult;
+        
+        let baseR = (60 + (div/60)*70) * scaleMult;
+        baseR = isNaN(baseR) || baseR <= 0 ? 60 : baseR;
+        
+        let pc = new THREE.Vector3(), vpc=0;
+        f.pathPts.forEach(pt=>{
+          if(pt.hasL && !isNaN(pt.posL.x) && !isNaN(pt.posL.y) && !isNaN(pt.posL.z)){pc.add(pt.posL);vpc++;}
+          if(pt.hasR && !isNaN(pt.posR.x) && !isNaN(pt.posR.y) && !isNaN(pt.posR.z)){pc.add(pt.posR);vpc++;}
         });
-        if (tracePts.length > 0) {
-            traceGeo.setAttribute('position', new THREE.Float32BufferAttribute(tracePts, 3));
-            traceGeo.setAttribute('color', new THREE.Float32BufferAttribute(traceColors, 3));
-            let traceMat = new THREE.PointsMaterial({ size: 3, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true });
-            let tracePoints = new THREE.Points(traceGeo, traceMat);
-            group.add(tracePoints);
+        if(vpc>0) pc.divideScalar(vpc);
+        else pc.set(0,0,0);
+        if(isNaN(pc.x) || isNaN(pc.y) || isNaN(pc.z)) pc.set(0,0,0);
+        
+        console.log(`[gen] word=${f.word} dom=${f.dom} scaleMult=${scaleMult.toFixed(2)} baseR=${baseR.toFixed(1)}`);
+        
+        // 背景色をベースカラーの極暗いHSLにして一体感を演出
+        let bgColor = new THREE.Color().setHSL(hue, sat * 0.3, 0.02);
+        this.scene.background = bgColor;
+        this.scene.fog = new THREE.Fog(bgColor, 300, 10000);
+        
+        let envGroup = new THREE.Group(); this.scene.add(envGroup);
+        let mainGroup = new THREE.Group(); this.scene.add(mainGroup);
+        
+        // 照明を強化
+        let lightIntensityMult = 1.0 + rmsFactor * 0.5 + velFactor * 0.3;
+        let hemiLight = new THREE.HemisphereLight(0xffffff, 0x222233, 1.8 * lightIntensityMult); 
+        this.scene.add(hemiLight);
+        let dirLight = new THREE.DirectionalLight(0xffffff, 3.5 * lightIntensityMult); 
+        dirLight.position.set(100, 300, 100); 
+        this.scene.add(dirLight);
+        let colorLight = new THREE.DirectionalLight(baseColor, 3.0 * lightIntensityMult);
+        colorLight.position.set(-200, 50, -200);
+        this.scene.add(colorLight);
+        
+        let pointLight = new THREE.PointLight(baseColor, (emis+1)*4 * lightIntensityMult, 3000); 
+        pointLight.position.copy(pc).add(new THREE.Vector3(0,50,0)); 
+        this.scene.add(pointLight); // Add directly to scene to ensure valid world matrix
+
+        // 軌跡リボン（3D Hand Ribbon）を描画
+        let enhancedFreq = freq * (1.0 + velFactor * 0.5);
+        let enhancedAmp = amp * (1.0 + rmsFactor * 0.8);
+        this._buildHandRibbon(mainGroup, f, baseColor, metal, rough, emis, ior, enhancedFreq, enhancedAmp);
+        
+        // 演出パラメータも大袈裟に
+        let enhancedEmis = emis + rmsFactor * 0.5;
+        let enhancedMetal = Math.min(1.0, metal + velFactor * 0.1);
+        let enhancedRough = Math.max(0.0, rough - rmsFactor * 0.05);
+        
+        switch(f.category) {
+          case 'impact': this._buildImpact(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'sharp':  this._buildSharp(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'spiral': this._buildSpiral(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'liquid': this._buildLiquid(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'elastic':this._buildElastic(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'rough':  this._buildRough(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'emotion':this._buildEmotion(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'soft':   this._buildSoft(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          
+          case 'glowring':    this._buildGlowRing(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'pixelgrid':   this._buildPixelGrid(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'nebula':      this._buildNebula(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          case 'fractaltree': this._buildFractalTree(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
+          
+          default:       this._buildSoft(mainGroup, envGroup, pc, baseR, baseColor, f, enhancedMetal, enhancedRough, enhancedEmis); break;
         }
 
-        // --- カメラ位置の自動調整 ---
-        let box = new THREE.Box3().setFromObject(group);
-        let center = new THREE.Vector3();
-        if (!box.isEmpty()) {
-            box.getCenter(center);
-            this.controls.target.copy(center);
-            let size = new THREE.Vector3();
-            box.getSize(size);
-            let maxDim = Math.max(size.x, size.y, size.z);
-            let distance = Math.max(150, maxDim * 1.0);
-            this.camera.position.set(center.x, center.y, center.z + distance);
+        // カメラターゲットの調整（真ん中を中心に）
+        mainGroup.add(new THREE.Object3D());
+        let box3 = new THREE.Box3().setFromObject(mainGroup);
+        let bc = new THREE.Vector3(), bs = new THREE.Vector3();
+        if(!box3.isEmpty() && !isNaN(box3.min.x) && !isNaN(box3.max.x)){
+            box3.getCenter(bc);
+            box3.getSize(bs);
         } else {
-            this.camera.position.set(0, 0, 150);
+            bc.copy(pc);
+            bs.set(100, 100, 100);
         }
-
-        this.animate = this.animate.bind(this);
+        if(isNaN(bc.x) || isNaN(bc.y) || isNaN(bc.z)) bc.copy(pc);
+        if(isNaN(bs.x) || isNaN(bs.y) || isNaN(bs.z)) bs.set(100, 100, 100);
+        
+        this.controls.target.copy(bc);
+        
+        let maxDim = Math.max(bs.x, bs.y, bs.z);
+        maxDim = isNaN(maxDim) ? 100 : maxDim;
+        let camDist = Math.max(150, Math.min(750, maxDim * 1.1));
+        camDist = isNaN(camDist) ? 200 : camDist;
+        
+        this.camera.position.set(bc.x, bc.y + camDist * 0.3, bc.z + camDist * 1.1);
+        if(isNaN(this.camera.position.x) || isNaN(this.camera.position.y) || isNaN(this.camera.position.z)) {
+            this.camera.position.set(0, 50, 200);
+        }
+        
+        this.camera.lookAt(bc);
+        this.controls.update(); 
+        this.camera.updateProjectionMatrix();
+        
+        this.animate = this.animate.bind(this); 
         this.animate();
       }
+
+      _buildHandRibbon(mainGroup, f, baseColor, metal, rough, emis, ior, freq, amp) {
+        if (!f.pathPts || f.pathPts.length < 3) return;
+        const hue = f.p[0]/360;
+        const group = new THREE.Group();
         
+        // 1. 左右の手の軌跡をつなぐ 3D リボンメッシュ
+        const geom = new THREE.BufferGeometry();
+        const vertices = [];
+        const colors = [];
+        const indices = [];
+        
+        f.pathPts.forEach((pt, i) => {
+          let posL = pt.posL;
+          let posR = pt.posR;
+          vertices.push(posL.x, posL.y, posL.z);
+          vertices.push(posR.x, posR.y, posR.z);
+          
+          let ratio = i / f.pathPts.length;
+          let cL = new THREE.Color().setHSL((hue + ratio * 0.3) % 1, 1.0, 0.6);
+          let cR = new THREE.Color().setHSL((hue + ratio * 0.3 + 0.15) % 1, 1.0, 0.5);
+          colors.push(cL.r, cL.g, cL.b);
+          colors.push(cR.r, cR.g, cR.b);
+          
+          if (i > 0) {
+            let prev = (i - 1) * 2;
+            let curr = i * 2;
+            indices.push(prev, prev + 1, curr);
+            indices.push(prev + 1, curr + 1, curr);
+            indices.push(prev, curr, prev + 1);
+            indices.push(prev + 1, curr, curr + 1);
+          }
+        });
+        geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geom.setIndex(indices);
+        geom.computeVertexNormals();
+        
+        // オノマトペの物理特性をリボン素材に厳密に反映
+        const mat = new THREE.MeshPhysicalMaterial({
+          vertexColors: true,
+          roughness: Math.max(0.01, rough),
+          metalness: Math.max(0.05, metal),
+          clearcoat: 1.0,
+          clearcoatRoughness: Math.max(0.01, rough * 0.5),
+          transmission: ior > 1.8 ? 0.05 : 0.4,
+          opacity: 0.9,
+          transparent: true,
+          side: THREE.DoubleSide
+        });
+        const ribbonMesh = new THREE.Mesh(geom, mat);
+        group.add(ribbonMesh);
+        
+        // 2. 左手・右手それぞれの滑らかなネオンチューブ
+        const ptsL = f.pathPts.map(p => p.posL);
+        const ptsR = f.pathPts.map(p => p.posR);
+        const seedVal = this._getSeed(f.word);
+        
+        const createTube = (pts, offsetColor) => {
+          const curve = new THREE.CatmullRomCurve3(pts);
+          const rad = 2.0 + f.maxRms * 12 + seedVal * 3;
+          const tubeGeom = new THREE.TubeGeometry(curve, 100, rad, 8, false);
+          
+          // チューブをオノマトペのうねり（freq, amp）でノイズ変形
+          const pos = tubeGeom.attributes.position;
+          const vec = new THREE.Vector3();
+          for(let i=0; i<pos.count; i++) {
+            vec.fromBufferAttribute(pos, i);
+            let noise = Math.sin(vec.x * (0.01 + freq * 0.005) + seedVal * 10) * Math.cos(vec.z * (0.01 + freq * 0.005) + seedVal * 10) * (amp * 1.5);
+            vec.x += noise; vec.y += noise;
+            pos.setXYZ(i, vec.x, vec.y, vec.z);
+          }
+          tubeGeom.computeVertexNormals();
+          
+          const tubeMat = new THREE.MeshPhysicalMaterial({
+            color: offsetColor,
+            emissive: offsetColor,
+            emissiveIntensity: emis + f.energy * 2.0,
+            roughness: Math.max(0.01, rough),
+            metalness: Math.max(0.05, metal),
+            clearcoat: 1.0,
+            clearcoatRoughness: Math.max(0.01, rough * 0.5),
+            transmission: ior > 1.8 ? 0.1 : 0.6,
+            transparent: true,
+            opacity: 0.85,});
+          group.add(new THREE.Mesh(tubeGeom, tubeMat));
+        };
+        
+        createTube(ptsL, new THREE.Color().setHSL(hue, 1.0, 0.6));
+        createTube(ptsR, new THREE.Color().setHSL((hue + 0.5) % 1, 1.0, 0.6));
+        
+        // 3. 左右を結ぶネオン接続線
+        const webGeom = new THREE.BufferGeometry();
+        const webVertices = [];
+        const webColors = [];
+        f.pathPts.forEach((pt, i) => {
+          if (i % 2 === 0) {
+            webVertices.push(pt.posL.x, pt.posL.y, pt.posL.z);
+            webVertices.push(pt.posR.x, pt.posR.y, pt.posR.z);
+            let c = new THREE.Color().setHSL((hue + 0.25) % 1, 1.0, 0.7);
+            webColors.push(c.r, c.g, c.b, c.r, c.g, c.b);
+          }
+        });
+        webGeom.setAttribute('position', new THREE.Float32BufferAttribute(webVertices, 3));
+        webGeom.setAttribute('color', new THREE.Float32BufferAttribute(webColors, 3));
+        const webMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.5 + f.energy * 0.5,
+          blending: THREE.AdditiveBlending
+        });
+        group.add(new THREE.LineSegments(webGeom, webMat));
+        
+        mainGroup.add(group);
+        
+        // オノマトペ固有のアニメーション変形を適用
+        this.objects.push({
+          mesh: ribbonMesh,
+          isRibbon: true,
+          baseGeo: geom.clone(),
+          freq: (0.01 + freq * 0.008) * (0.85 + Math.random() * 0.3),
+          amp: (2.0 + amp * 12) * (0.85 + Math.random() * 0.3)
+        });
+      }
+
+      _addStars(envGroup, cnt, hexColor) {
+        let sg=new THREE.BufferGeometry();
+        let arr=new Float32Array(cnt*3);
+        for(let i=0;i<cnt;i++){arr[i*3]=(Math.random()-0.5)*4000;arr[i*3+1]=(Math.random()-0.5)*4000;arr[i*3+2]=(Math.random()-0.5)*4000;}
+        sg.setAttribute('position',new THREE.BufferAttribute(arr,3));
+        let sm=new THREE.PointsMaterial({size:4.0, color:hexColor||0xffffff, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending, depthWrite:false});
+        envGroup.add(new THREE.Points(sg,sm));
+      }
+
+      _getSeed(word) {
+        let hash = 0;
+        for (let i = 0; i < word.length; i++) {
+          hash = word.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash % 1000) / 1000;
+      }
+
+      _buildImpact(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.fog = new THREE.Fog(0x0a0303, 300, 10000);
+        this._addStars(envGroup, 1500, 0xff5500);
+        let seed = this._getSeed(f.word);
+        
+        let floorG = new THREE.PlaneGeometry(3500, 3500, 100, 100);
+        let floorM = new THREE.MeshPhysicalMaterial({
+          color: 0x150b0b, roughness: 0.85, metalness: 0.5, 
+          emissive: 0x330a00, emissiveIntensity: 0.5
+        });
+        let floor = new THREE.Mesh(floorG, floorM);
+        floor.rotation.x = -Math.PI/2; floor.position.y = pc.y - 120;
+        let pos = floorG.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+          let x = pos.getX(i), y = pos.getY(i);
+          let nz = Math.sin(x*0.005 + seed*5)*Math.cos(y*0.005 + seed*5)*180
+                 + Math.sin(x*0.015)*Math.sin(y*0.015)*45;
+          pos.setZ(i, pos.getZ(i) + nz);
+        }
+        floorG.computeVertexNormals(); envGroup.add(floor);
+        
+        let ringG = new THREE.RingGeometry(baseR*1.5, baseR*2.5, 64);
+        let ringM = new THREE.MeshBasicMaterial({color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending});
+        let ring = new THREE.Mesh(ringG, ringM);
+        ring.rotation.x = -Math.PI/2; ring.position.copy(pc);
+        mainGroup.add(ring);
+        this.objects.push({mesh: ring, rx: 0.005, ry: 0.01, isRhythmic: true, baseEmis: 1.0});
+
+        let numPillars = 25 + Math.floor(f.avgSpread*30);
+        let shardG = new THREE.TetrahedronGeometry(35 + seed*40, 1);
+        let shardM = new THREE.MeshPhysicalMaterial({
+          color: 0x1c1c1c, roughness: 0.9, metalness: 0.8,
+          emissive: color, emissiveIntensity: emis * 1.5,
+          clearcoat: 1.0
+        });
+        let inst = new THREE.InstancedMesh(shardG, shardM, numPillars);
+        let dm = new THREE.Object3D();
+        for(let i=0; i<numPillars; i++) {
+          let r = baseR * 1.5 + Math.random() * 800;
+          let ang = Math.random() * Math.PI * 2;
+          dm.position.set(pc.x + Math.cos(ang)*r, pc.y - 100 + (Math.random()-0.3)*400, pc.z + Math.sin(ang)*r);
+          dm.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+          dm.scale.setScalar(0.5 + Math.random()*2.0);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+        this.objects.push({mesh: inst, isRhythmic: true, baseEmis: emis*1.5});
+      }
+
+      _buildSharp(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x03080e);
+        this.scene.fog = new THREE.Fog(0x03080e, 300, 10000);
+        this._addStars(envGroup, 2000, 0x88e0ff);
+        let seed = this._getSeed(f.word);
+
+        let floorG = new THREE.PlaneGeometry(3000, 3000, 50, 50);
+        let floorM = new THREE.MeshPhysicalMaterial({color: 0x223344, roughness: 0.1, metalness: 0.9, flatShading: true});
+        let floor = new THREE.Mesh(floorG, floorM);
+        floor.rotation.x = -Math.PI/2; floor.position.y = pc.y - 120;
+        let pos = floorG.attributes.position;
+        for(let i=0; i<pos.count; i++) pos.setZ(i, pos.getZ(i) + (Math.random()-0.5)*40);
+        floorG.computeVertexNormals(); envGroup.add(floor);
+
+        let crystalMat = new THREE.MeshPhysicalMaterial({
+          color: color, roughness: 0.15, metalness: 0.6,
+          transmission: 0.6, ior: 2.65, thickness: 25.0,
+          clearcoat: 1.0, clearcoatRoughness: 0.01,
+          sheen: 1.0, sheenColor: new THREE.Color(0xffffff),});
+
+        let numSpikes = 120 + Math.floor(f.avgSpread * 100);
+        let spikeG = new THREE.ConeGeometry(baseR * 0.18, baseR * (3.0 + seed*3.0), 5, 1);
+        let inst = new THREE.InstancedMesh(spikeG, crystalMat, numSpikes);
+        let dm = new THREE.Object3D();
+        
+        for(let i=0; i<numSpikes; i++) {
+          let ptIdx = Math.floor(Math.random() * f.pathPts.length);
+          let origin = f.pathPts[ptIdx] ? f.pathPts[ptIdx].posL : pc;
+          let dir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.3, Math.random()-0.5).normalize();
+          let dist = baseR * (0.3 + Math.random()*0.8);
+          dm.position.copy(origin).addScaledVector(dir, dist);
+          dm.scale.set(1.0 + Math.random(), 0.5 + Math.random()*2.0, 1.0 + Math.random());
+          dm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+        this.objects.push({mesh: mainGroup, ry: 0.003 + seed*0.005});
+      }
+
+      _buildSpiral(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x020211);
+        this.scene.fog = new THREE.FogExp2(0x020211, 0.0008);
+        this._addStars(envGroup, 4000, 0x99ccff);
+        let seed = this._getSeed(f.word);
+
+        let numStrands = 5 + Math.floor(seed * 5);
+        let points = [];
+        let r = baseR * 3.5;
+        for(let i=0; i<200; i++) {
+          let a = i * 0.15;
+          let pr = r * (1.0 + i*0.008);
+          points.push(new THREE.Vector3(Math.cos(a)*pr, (i-100)*7, Math.sin(a)*pr));
+        }
+        
+        let tubeMat = new THREE.MeshPhysicalMaterial({
+          color: color, metalness: 0.6, roughness: 0.15,
+          transmission: 0.5, ior: 1.8, thickness: 8.0,
+          emissive: color, emissiveIntensity: 0.4,
+          clearcoat: 1.0
+        });
+
+        for(let s=0; s<numStrands; s++) {
+          let offsetPoints = points.map((p, idx) => {
+            let angle = (idx * 0.1) + (s * (Math.PI * 2 / numStrands));
+            let offsetR = baseR * (0.6 + seed * 0.8);
+            return new THREE.Vector3(
+              p.x + Math.cos(angle)*offsetR,
+              p.y + (Math.random()-0.5)*15,
+              p.z + Math.sin(angle)*offsetR
+            );
+          });
+          let strandCurve = new THREE.CatmullRomCurve3(offsetPoints);
+          let geo = new THREE.TubeGeometry(strandCurve, 150, baseR * 0.3, 8, false);
+          let mesh = new THREE.Mesh(geo, tubeMat);
+          mesh.position.copy(pc);
+          mainGroup.add(mesh);
+          this.objects.push({mesh: mesh, ry: 0.01 + (s*0.005) + f.avgVel*0.005});
+        }
+
+        let pCount = 3000;
+        let pg = new THREE.BufferGeometry();
+        let pPos = new Float32Array(pCount * 3);
+        let pMeta = [];
+        for(let i=0; i<pCount; i++) {
+          let rad = baseR * (1.5 + Math.random()*5.0);
+          let ang = Math.random() * Math.PI * 2;
+          let y = (Math.random() - 0.5) * 1200;
+          let speed = 0.5 + Math.random()*1.5;
+          pMeta.push({rad, ang, speed, y});
+          pPos[i*3] = Math.cos(ang)*rad;
+          pPos[i*3+1] = y;
+          pPos[i*3+2] = Math.sin(ang)*rad;
+        }
+        pg.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        let pm = new THREE.PointsMaterial({
+          size: 4.5, color: color, transparent: true, opacity: 0.85,
+          blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        let pSystem = new THREE.Points(pg, pm);
+        pSystem.position.copy(pc);
+        mainGroup.add(pSystem);
+        this.objects.push({mesh: pSystem, isSpiralParticles: true, pMeta: pMeta, baseR: baseR});
+      }
+
+      _buildLiquid(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        let liqColor = color.clone().lerp(new THREE.Color(0x00aaff), 0.4);
+        this.scene.background = liqColor.clone().multiplyScalar(0.08);
+        this.scene.fog = new THREE.FogExp2(this.scene.background, 0.001);
+        let seed = this._getSeed(f.word);
+
+        let pg = new THREE.PlaneGeometry(3500, 3500, 100, 100);
+        let pm = new THREE.MeshPhysicalMaterial({
+          color: liqColor, transmission: 0.96, opacity: 1.0, metalness: 0.1, 
+          roughness: 0.01, ior: 1.52, thickness: 25.0, clearcoat: 1.0,});
+        let plane = new THREE.Mesh(pg, pm);
+        plane.rotation.x = -Math.PI/2; plane.position.y = pc.y - 100; 
+        envGroup.add(plane);
+        this.objects.push({mesh: plane, isWavePlane: true, baseGeo: pg.clone(), amp: baseR * 1.8, freq: 0.012 + seed*0.01});
+
+        let mercuryMat = new THREE.MeshPhysicalMaterial({
+          color: 0xdddddd, metalness: 0.7, roughness: 0.15,
+          clearcoat: 1.0, clearcoatRoughness: 0.01,
+          envMapIntensity: 2.0,});
+        let dropG = new THREE.SphereGeometry(baseR * (1.2 + seed*0.8), 64, 64);
+        let centralDrop = new THREE.Mesh(dropG, mercuryMat);
+        centralDrop.position.copy(pc).add(new THREE.Vector3(0, baseR * 0.5, 0));
+        mainGroup.add(centralDrop);
+        this.objects.push({mesh: centralDrop, isSquishy: true, baseGeo: dropG.clone(), amp: baseR*0.4, freq: 0.03});
+
+        let numBubbles = 150 + Math.floor(f.avgSpread*80);
+        let bubbleG = new THREE.SphereGeometry(baseR*0.25, 16, 16);
+        let inst = new THREE.InstancedMesh(bubbleG, pm, numBubbles);
+        let dm = new THREE.Object3D();
+        let bubbleMeta = [];
+        for(let i=0; i<numBubbles; i++) {
+          let x = pc.x + (Math.random()-0.5)*1200;
+          let y = pc.y - 100 + Math.random()*800;
+          let z = pc.z + (Math.random()-0.5)*1200;
+          let speed = 1.0 + Math.random()*2.0;
+          bubbleMeta.push({x, y, z, speed});
+          dm.position.set(x, y, z);
+          dm.scale.setScalar(0.4 + Math.random()*1.8);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+        this.objects.push({mesh: inst, isDropletsInstanced: true, bubbleMeta: bubbleMeta, minY: pc.y - 100, maxY: pc.y + 700});
+      }
+
+      _buildElastic(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x180218);
+        this.scene.fog = new THREE.Fog(0x180218, 300, 10000);
+        this._addStars(envGroup, 1500, 0xff88ee);
+        let seed = this._getSeed(f.word);
+
+        let fg = new THREE.PlaneGeometry(3000, 3000, 80, 80);
+        let fm = new THREE.MeshPhysicalMaterial({
+          color: 0xff44aa, roughness: 0.05, metalness: 0.1,
+          transmission: 0.4, thickness: 10, clearcoat: 1.0
+        });
+        let floor = new THREE.Mesh(fg, fm);
+        floor.rotation.x = -Math.PI/2; floor.position.y = pc.y - 120; envGroup.add(floor);
+        this.objects.push({mesh: floor, isWavePlane: true, baseGeo: fg.clone(), amp: baseR*0.9, freq: 0.015});
+
+        let jellyMat = new THREE.MeshPhysicalMaterial({
+          color: color, transmission: 0.8, roughness: 0.15, 
+          ior: 1.48, thickness: 30.0, clearcoat: 1.0,
+          clearcoatRoughness: 0.01,});
+
+        let kg = new THREE.TorusKnotGeometry(baseR*1.6, baseR*0.7, 180, 48, 3, 4);
+        let knot = new THREE.Mesh(kg, jellyMat);
+        knot.position.copy(pc); mainGroup.add(knot);
+        this.objects.push({mesh: knot, isSquishy: true, baseGeo: kg.clone(), amp: baseR * (0.4 + seed*0.4), freq: 0.035, ry: 0.01});
+
+        let numGummies = 80 + Math.floor(f.avgSpread*50);
+        let gumG = new THREE.SphereGeometry(baseR*0.4, 32, 32);
+        let gumMat = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color().setHSL((seed + 0.5)%1, 1.0, 0.6),
+          transmission: 0.95, roughness: 0.02, ior: 1.45, clearcoat: 1.0,});
+        let inst = new THREE.InstancedMesh(gumG, gumMat, numGummies);
+        let dm = new THREE.Object3D();
+        for(let i=0; i<numGummies; i++) {
+          dm.position.set(pc.x+(Math.random()-0.5)*900, pc.y+(Math.random()-0.4)*600, pc.z+(Math.random()-0.5)*900);
+          dm.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+          dm.scale.setScalar(0.6 + Math.random()*1.6);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+      }
+
+      _buildRough(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x060608);
+        this.scene.fog = new THREE.FogExp2(0x060608, 0.001);
+        this._addStars(envGroup, 2000, 0xbbbbbb);
+        let seed = this._getSeed(f.word);
+
+        let fg = new THREE.PlaneGeometry(3500, 3500, 80, 80);
+        let rm = new THREE.MeshStandardMaterial({color: 0x222225, roughness: 0.9, metalness: 0.3, flatShading: true});
+        let floor = new THREE.Mesh(fg, rm);
+        floor.rotation.x = -Math.PI/2; floor.position.y = pc.y - 150;
+        let pos = fg.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+          let x = pos.getX(i), y = pos.getY(i);
+          let noise = Math.sin(x*0.015)*Math.cos(y*0.015)*90 + (Math.sin(x*0.06)*Math.sin(y*0.06)*25);
+          pos.setZ(i, pos.getZ(i) + noise);
+        }
+        fg.computeVertexNormals(); envGroup.add(floor);
+
+        let rockG = new THREE.DodecahedronGeometry(baseR * 1.3, 3);
+        let posR = rockG.attributes.position;
+        for(let i=0; i<posR.count; i++) {
+          let v = new THREE.Vector3().fromBufferAttribute(posR, i);
+          let n = Math.sin(v.x*0.08 + seed*10)*Math.cos(v.y*0.08)*Math.sin(v.z*0.08)*baseR*0.45;
+          v.addScaledVector(v.clone().normalize(), n);
+          posR.setXYZ(i, v.x, v.y, v.z);
+        }
+        rockG.computeVertexNormals();
+        
+        let rockMesh = new THREE.Mesh(rockG, rm);
+        rockMesh.position.copy(pc);
+        mainGroup.add(rockMesh);
+        this.objects.push({mesh: rockMesh, ry: 0.005, rx: 0.002});
+
+        let wireMat = new THREE.MeshBasicMaterial({color: color, wireframe: true, transparent: true, opacity: 0.4 + emis*0.3});
+        let wireMesh = new THREE.Mesh(rockG, wireMat);
+        wireMesh.position.copy(pc); wireMesh.scale.setScalar(1.005);
+        mainGroup.add(wireMesh);
+
+        let numAsteroids = 100 + Math.floor(f.avgSpread*60);
+        let astG = new THREE.DodecahedronGeometry(baseR*0.3, 1);
+        let inst = new THREE.InstancedMesh(astG, rm, numAsteroids);
+        let dm = new THREE.Object3D();
+        for(let i=0; i<numAsteroids; i++) {
+          dm.position.set(pc.x+(Math.random()-0.5)*1500, pc.y+(Math.random()-0.3)*700, pc.z+(Math.random()-0.5)*1500);
+          dm.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+          dm.scale.setScalar(0.4 + Math.random()*1.6);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+      }
+
+      _buildEmotion(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x11001c);
+        this.scene.fog = new THREE.Fog(0x11001c, 300, 10000);
+        this._addStars(envGroup, 2500, 0xff55aa);
+        let seed = this._getSeed(f.word);
+
+        let coreMat = new THREE.MeshPhysicalMaterial({
+          color: color, emissive: color, emissiveIntensity: 2.2,
+          roughness: 0.15, metalness: 0.6, transmission: 0.4, ior: 1.8,
+          clearcoat: 1.0, clearcoatRoughness: 0.05,});
+        let kg = new THREE.TorusKnotGeometry(baseR * 1.5, baseR * 0.45, 200, 64, 3, 5);
+        let knot = new THREE.Mesh(kg, coreMat);
+        knot.position.copy(pc); mainGroup.add(knot);
+        this.objects.push({mesh: knot, isHeartbeat: true, ry: 0.015});
+
+        let shellG = new THREE.IcosahedronGeometry(baseR * 2.2, 2);
+        let shellMat = new THREE.MeshPhysicalMaterial({
+          color: 0xffffff, transmission: 0.9, opacity: 0.85,
+          roughness: 0.1, clearcoat: 1.0, clearcoatRoughness: 0.05, side: THREE.DoubleSide
+        });
+        let shell = new THREE.Mesh(shellG, shellMat);
+        shell.position.copy(pc); mainGroup.add(shell);
+        this.objects.push({mesh: shell, isHeartbeat: true, ry: -0.005, rx: 0.005});
+
+        let numCubes = 120 + Math.floor(f.avgSpread*80);
+        let cubeG = new THREE.BoxGeometry(baseR*0.25, baseR*0.25, baseR*0.25);
+        let cubeM = new THREE.MeshPhysicalMaterial({
+          color: color, emissive: color, emissiveIntensity: emis*2.2,
+          roughness: 0.25, metalness: 0.6
+        });
+        let inst = new THREE.InstancedMesh(cubeG, cubeM, numCubes);
+        let dm = new THREE.Object3D();
+        for(let i=0; i<numCubes; i++) {
+          dm.position.set(pc.x+(Math.random()-0.5)*1300, pc.y+(Math.random()-0.5)*900, pc.z+(Math.random()-0.5)*1300);
+          dm.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+          dm.scale.setScalar(0.5 + Math.random()*1.8);
+          dm.updateMatrix(); inst.setMatrixAt(i, dm.matrix);
+        }
+        mainGroup.add(inst);
+        this.objects.push({mesh: inst, isHeartbeatInst: true, baseEmis: emis*2.0});
+      }
+
+      _buildSoft(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x111622);
+        this.scene.fog = new THREE.Fog(0x111622, 300, 10000);
+        let seed = this._getSeed(f.word);
+
+        let bubbleMat = new THREE.MeshPhysicalMaterial({
+          color: 0xffffff, roughness: 0.1, metalness: 0.1,
+          transmission: 0.9, ior: 1.45, thickness: 10.0,
+          transparent: true, opacity: 0.9
+        });
+
+        let numBubbles = 20 + Math.floor(f.avgSpread * 15);
+        for(let i=0; i<numBubbles; i++) {
+          let size = baseR * (0.8 + Math.random() * 1.5);
+          let bubbleG = new THREE.SphereGeometry(size, 32, 32);
+          let mesh = new THREE.Mesh(bubbleG, bubbleMat);
+          mesh.position.set(pc.x+(Math.random()-0.5)*1000, pc.y+(Math.random())*500, pc.z+(Math.random()-0.5)*1000);
+          mainGroup.add(mesh);
+          this.objects.push({mesh: mesh, isCloud: true, bobOffset: Math.random()*Math.PI*2});
+        }
+
+        let pCount = 2000;
+        let pg = new THREE.BufferGeometry();
+        let pPos = new Float32Array(pCount * 3);
+        for(let i=0; i<pCount; i++) {
+          pPos[i*3] = pc.x + (Math.random()-0.5)*1600;
+          pPos[i*3+1] = pc.y + (Math.random()-0.2)*800;
+          pPos[i*3+2] = pc.z + (Math.random()-0.5)*1600;
+        }
+        pg.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        let pm = new THREE.PointsMaterial({
+          size: 7.0, color: color, transparent: true, opacity: 0.5,
+          blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        let clouds = new THREE.Points(pg, pm);
+        envGroup.add(clouds);
+        this.objects.push({mesh: clouds, isCloud: true, bobOffset: 0});
+      }
+
+      _buildGlowRing(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x020205);
+        this.scene.fog = new THREE.FogExp2(0x020205, 0.001);
+        this._addStars(envGroup, 1500, 0x00ffff);
+        let seed = this._getSeed(f.word);
+
+        let numRings = 8 + Math.floor(seed * 8);
+        for(let i=0; i<numRings; i++) {
+          let ringRad = baseR * (0.8 + i * 0.4);
+          let ringG = new THREE.TorusGeometry(ringRad, 2.5 + seed*2, 16, 100);
+          
+          let ringColor = new THREE.Color().setHSL((seed + i/numRings) % 1.0, 1.0, 0.6);
+          let ringM = new THREE.MeshPhysicalMaterial({
+            color: ringColor,
+            emissive: ringColor,
+            emissiveIntensity: 2.0 + emis,
+            roughness: 0.05,
+            metalness: 0.9,
+            clearcoat: 1.0,
+            transparent: true,
+            opacity: 0.8,});
+          
+          let mesh = new THREE.Mesh(ringG, ringM);
+          mesh.position.copy(pc);
+          mesh.rotation.set(seed * Math.PI + i*0.2, (seed * 0.5) * Math.PI, 0);
+          mainGroup.add(mesh);
+          this.objects.push({
+            mesh: mesh,
+            rx: 0.005 + i*0.002,
+            ry: -0.003 - i*0.001,
+            isGlowRing: true,
+            baseEmis: 2.0 + emis
+          });
+        }
+      }
+
+      _buildPixelGrid(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x05080c);
+        this.scene.fog = new THREE.FogExp2(0x05080c, 0.0008);
+        this._addStars(envGroup, 1200, color);
+        let seed = this._getSeed(f.word);
+
+        let boxSize = baseR * 0.25;
+        let gridG = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+        let gridM = new THREE.MeshPhysicalMaterial({
+          color: color,
+          emissive: color,
+          emissiveIntensity: 0.5 + emis,
+          roughness: 0.2,
+          metalness: 0.8,
+          clearcoat: 1.0,
+          clearcoatRoughness: 0.1
+        });
+
+        let cols = 6 + Math.floor(seed * 6);
+        let instCount = cols * cols * 3;
+        let inst = new THREE.InstancedMesh(gridG, gridM, instCount);
+        let dm = new THREE.Object3D();
+        
+        let idx = 0;
+        let spacing = boxSize * 1.5;
+        for(let x=0; x<cols; x++) {
+          for(let z=0; z<cols; z++) {
+            for(let y=0; y<3; y++) {
+              let posX = pc.x + (x - cols/2) * spacing;
+              let posZ = pc.z + (z - cols/2) * spacing;
+              let heightOffset = Math.sin(x*0.5 + seed*5)*Math.cos(z*0.5 + seed*5)*boxSize*2.0;
+              let posY = pc.y + (y - 1) * spacing + heightOffset;
+              
+              dm.position.set(posX, posY, posZ);
+              dm.rotation.set(0, 0, 0);
+              dm.scale.setScalar(0.7 + Math.random()*0.6);
+              dm.updateMatrix();
+              inst.setMatrixAt(idx++, dm.matrix);
+            }
+          }
+        }
+        mainGroup.add(inst);
+        this.objects.push({
+          mesh: inst,
+          ry: 0.002,
+          isPixelGrid: true,
+          cols: cols,
+          spacing: spacing,
+          boxSize: boxSize,
+          seed: seed,
+          pc: pc
+        });
+      }
+
+      _buildNebula(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x020008);
+        this.scene.fog = new THREE.FogExp2(0x020008, 0.0005);
+        let seed = this._getSeed(f.word);
+
+        let pCount = 5000 + Math.floor(seed * 8000);
+        let pg = new THREE.BufferGeometry();
+        let pPos = new Float32Array(pCount * 3);
+        let pColors = new Float32Array(pCount * 3);
+        
+        let c1 = color;
+        let c2 = new THREE.Color().setHSL((seed + 0.3)%1, 1.0, 0.6);
+        let c3 = new THREE.Color(0x00ffff);
+        
+        for(let i=0; i<pCount; i++) {
+          let progress = i / pCount;
+          let ang = progress * Math.PI * 40.0 + seed * 10;
+          let rad = baseR * 0.5 + progress * baseR * 6.0;
+          let spread = (1.0 - progress) * baseR * 1.5 + 20;
+          
+          let x = pc.x + Math.cos(ang) * rad + (Math.random() - 0.5) * spread;
+          let y = pc.y + (Math.random() - 0.5) * spread + progress * 200 - 100;
+          let z = pc.z + Math.sin(ang) * rad + (Math.random() - 0.5) * spread;
+          
+          pPos[i*3] = x;
+          pPos[i*3+1] = y;
+          pPos[i*3+2] = z;
+          
+          let mixColor = c1.clone().lerp(c2, progress);
+          if(Math.random() > 0.7) mixColor.lerp(c3, 0.5);
+          pColors[i*3] = mixColor.r;
+          pColors[i*3+1] = mixColor.g;
+          pColors[i*3+2] = mixColor.b;
+        }
+        
+        pg.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pg.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+        
+        let pm = new THREE.PointsMaterial({
+          size: 4.0 + seed*4.0,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.65,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        
+        let system = new THREE.Points(pg, pm);
+        mainGroup.add(system);
+        this.objects.push({
+          mesh: system,
+          ry: 0.003,
+          isNebula: true,
+          pPos: pPos,
+          seed: seed,
+          pc: pc
+        });
+      }
+
+      _buildFractalTree(mainGroup, envGroup, pc, baseR, color, f, metal, rough, emis) {
+        this.scene.background = new THREE.Color(0x050b06);
+        this.scene.fog = new THREE.FogExp2(0x050b06, 0.001);
+        this._addStars(envGroup, 1000, 0xaaff88);
+        let seed = this._getSeed(f.word);
+
+        let treeGroup = new THREE.Group();
+        treeGroup.position.copy(pc);
+        mainGroup.add(treeGroup);
+
+        let branchMat = new THREE.MeshPhysicalMaterial({
+          color: color,
+          metalness: 0.9,
+          roughness: 0.1,
+          clearcoat: 1.0,
+          transmission: 0.3
+        });
+        let leafMat = new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color().setHSL((seed + 0.33) % 1.0, 1.0, 0.5),
+          emissive: new THREE.Color().setHSL((seed + 0.33) % 1.0, 1.0, 0.3),
+          roughness: 0.01,
+          metalness: 0.1,
+          transmission: 0.95,
+          ior: 1.5,
+          clearcoat: 1.0
+        });
+
+        const buildBranch = (start, dir, length, rad, depth) => {
+          if (depth > 5) return;
+          
+          let end = start.clone().addScaledVector(dir, length);
+          let path = new THREE.CatmullRomCurve3([start, end]);
+          let geom = new THREE.TubeGeometry(path, 8, rad, 6, false);
+          let mesh = new THREE.Mesh(geom, branchMat);
+          treeGroup.add(mesh);
+
+          if(depth === 5) {
+            let leafG = new THREE.SphereGeometry(rad * 4.0, 12, 12);
+            let leaf = new THREE.Mesh(leafG, leafMat);
+            leaf.position.copy(end);
+            treeGroup.add(leaf);
+          }
+
+          let numBranches = 2;
+          for(let i=0; i<numBranches; i++) {
+            let angle = (0.3 + seed * 0.2) * (i === 0 ? 1 : -1);
+            let nextDir = dir.clone().applyAxisAngle(new THREE.Vector3(0, 0, 1), angle);
+            nextDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * Math.PI);
+            nextDir.normalize();
+            buildBranch(end, nextDir, length * 0.72, rad * 0.65, depth + 1);
+          }
+        };
+
+        let startPt = new THREE.Vector3(0, -100, 0);
+        let startDir = new THREE.Vector3(0, 1, 0);
+        buildBranch(startPt, startDir, baseR * 3.5, baseR * 0.2, 0);
+
+        this.objects.push({
+          mesh: treeGroup,
+          ry: 0.005,
+          isFractalTree: true
+        });
+      }
+
 
       animate() {
         this.animationId=requestAnimationFrame(this.animate);this.controls.update();
         let t=performance.now()*0.001;
         for(let obj of this.objects){
           if(obj.ry)obj.mesh.rotation.y+=obj.ry;if(obj.rx)obj.mesh.rotation.x+=obj.rx;
+          
+          // --- [新演出] 衝撃波リングの拡大フェードアウト ---
+          if(obj.isExpandingRing) {
+            obj.progress = (obj.progress || 0) + 0.015;
+            if(obj.progress > 1.0) obj.progress = 0;
+            let scaleVal = obj.baseScale * (1.0 + obj.progress * 12.0);
+            obj.mesh.scale.set(scaleVal, scaleVal, scaleVal);
+            if(obj.mesh.material) {
+              obj.mesh.material.opacity = (1.0 - obj.progress) * 0.8;
+            }
+          }
+
+          // --- [新演出] 破片 of 放射状爆発移動 ---
+          if(obj.isExplodingShards && obj.shardMeta) {
+            let dm = new THREE.Object3D();
+            obj.progress = (obj.progress || 0) + 0.008;
+            if(obj.progress > 1.0) obj.progress = 0;
+            
+            for(let i=0; i<obj.shardMeta.length; i++) {
+              let m = obj.shardMeta[i];
+              let currentDist = m.baseDist + obj.progress * 1000 * m.speed;
+              let px = obj.pc.x + m.dir.x * currentDist;
+              let py = obj.pc.y + m.dir.y * currentDist;
+              let pz = obj.pc.z + m.dir.z * currentDist;
+              
+              dm.position.set(px, py, pz);
+              dm.rotation.set(m.rot.x + t*m.rotSpeed, m.rot.y + t*m.rotSpeed, 0);
+              dm.scale.setScalar(m.scale * (1.0 - obj.progress * 0.7));
+              dm.updateMatrix();
+              obj.mesh.setMatrixAt(i, dm.matrix);
+            }
+            obj.mesh.instanceMatrix.needsUpdate = true;
+          }
           
           if(obj.isPillar) {
             obj.mesh.position.y += (obj.tgtY - obj.mesh.position.y) * obj.speed;
@@ -1055,7 +1873,8 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
               }
               dm.position.set(m.x, m.y, m.z);
               dm.scale.setScalar(0.4 + (i%5)*0.3);
-              obj.mesh.updateMatrix = true;
+              dm.updateMatrix();
+              obj.mesh.setMatrixAt(i, dm.matrix);
             }
             obj.mesh.instanceMatrix.needsUpdate = true;
           }
@@ -1192,6 +2011,7 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
           sceneGen.generate();
         } catch(e) {
           console.error('generate() threw:', e);
+          showErrorOverlay(e);
         }
 
         // Phase 3へ遷移
