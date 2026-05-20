@@ -272,7 +272,9 @@
 
   <script type="module">
     // エラーハンドリング・画面オーバーレイ表示（デバッグ用）
-    window.onerror = function(message, source, lineno, colno, error) {
+    function showErrorOverlay(error) {
+      const msg = error.message || error;
+      const stack = error.stack || 'N/A';
       const div = document.createElement('div');
       div.style.position = 'fixed';
       div.style.top = '0';
@@ -287,34 +289,20 @@
       div.style.fontSize = '14px';
       div.style.whiteSpace = 'pre-wrap';
       div.style.overflow = 'auto';
-      div.innerHTML = `<h2>[MokoMoko] Run-time JS Error Detected</h2>
-<p style="font-size:16px;color:#ffcccc;"><b>Message:</b> \${message}</p>
-<p><b>Source:</b> \${source}</p>
-<p><b>Line:</b> \${lineno} : <b>Col:</b> \${colno}</p>
-<p><b>Stack Trace:</b><br>\${error ? error.stack : 'N/A'}</p>`;
+      div.innerHTML = `<h2>[MokoMoko] JS Error Detected</h2>
+<p style="font-size:16px;color:#ffcccc;"><b>Message:</b> \${msg}</p>
+<p><b>Stack Trace:</b><br>\${stack}</p>`;
       document.body.appendChild(div);
+    }
+
+    window.onerror = function(message, source, lineno, colno, error) {
+      showErrorOverlay(error || `\${message} at \${source}:\${lineno}:\${colno}`);
       return false;
     };
     window.addEventListener('unhandledrejection', function(event) {
-      const div = document.createElement('div');
-      div.style.position = 'fixed';
-      div.style.top = '0';
-      div.style.left = '0';
-      div.style.width = '100vw';
-      div.style.height = '100vh';
-      div.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
-      div.style.color = 'white';
-      div.style.zIndex = '999999';
-      div.style.padding = '30px';
-      div.style.fontFamily = 'monospace';
-      div.style.fontSize = '14px';
-      div.style.whiteSpace = 'pre-wrap';
-      div.style.overflow = 'auto';
-      div.innerHTML = `<h2>[MokoMoko] Unhandled Promise Rejection</h2>
-<p style="font-size:16px;color:#ffcccc;"><b>Reason:</b> \${event.reason}</p>
-<p><b>Stack Trace:</b><br>\${event.reason && event.reason.stack ? event.reason.stack : 'N/A'}</p>`;
-      document.body.appendChild(div);
+      showErrorOverlay(event.reason);
     });
+
     import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
 
     // --- グローバル状態 ---
@@ -748,10 +736,17 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         if(d.lw||d.rw){
           let posL=d.lw?d.lw.clone():new THREE.Vector3();
           let posR=d.rw?d.rw.clone():new THREE.Vector3();
+          if(isNaN(posL.x) || isNaN(posL.y) || isNaN(posL.z)) posL.set(0,0,0);
+          if(isNaN(posR.x) || isNaN(posR.y) || isNaN(posR.z)) posR.set(0,0,0);
           if(!lastP||(d.lw&&lastP.distanceTo(posL)>2)){pathPts.push({posL,posR,hasL:!!d.lw,hasR:!!d.rw});if(d.lw)lastP=posL.clone();}
         }
       });
       let n=recordData.length||1;avgRms/=n;avgVel/=n;avgSpread/=n;
+      avgRms = isNaN(avgRms) ? 0 : avgRms;
+      avgVel = isNaN(avgVel) ? 0 : avgVel;
+      avgSpread = isNaN(avgSpread) ? 0 : avgSpread;
+      maxRms = isNaN(maxRms) ? 0 : maxRms;
+      maxVel = isNaN(maxVel) ? 0 : maxVel;
       let match = findOnoParams(allText);
       let p, word = '';
       
@@ -920,17 +915,27 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         this.scene.environment = this._createEnvMap(baseColor);
         
         // 手の広がり、速度、声の大きさを大袈裟に乗算
-        let spreadFactor = Math.min(f.avgSpread * 3.5, 5.0);
-        let velFactor = Math.min(f.maxVel * 0.3, 4.0);
-        let rmsFactor = Math.min(f.maxRms * 6.0, 4.0);
+        let spreadFactor = isNaN(f.avgSpread) ? 0 : Math.min(f.avgSpread * 3.5, 5.0);
+        let velFactor = isNaN(f.maxVel) ? 0 : Math.min(f.maxVel * 0.3, 4.0);
+        let rmsFactor = isNaN(f.maxRms) ? 0 : Math.min(f.maxRms * 6.0, 4.0);
+        spreadFactor = isNaN(spreadFactor) ? 0 : spreadFactor;
+        velFactor = isNaN(velFactor) ? 0 : velFactor;
+        rmsFactor = isNaN(rmsFactor) ? 0 : rmsFactor;
+        
         let scaleMult = 1.0 + spreadFactor + velFactor + rmsFactor;
+        scaleMult = isNaN(scaleMult) ? 1.0 : scaleMult;
         
         let baseR = (60 + (div/60)*70) * scaleMult;
+        baseR = isNaN(baseR) || baseR <= 0 ? 60 : baseR;
         
         let pc = new THREE.Vector3(), vpc=0;
-        f.pathPts.forEach(pt=>{if(pt.hasL){pc.add(pt.posL);vpc++;}if(pt.hasR){pc.add(pt.posR);vpc++;}});
+        f.pathPts.forEach(pt=>{
+          if(pt.hasL && !isNaN(pt.posL.x) && !isNaN(pt.posL.y) && !isNaN(pt.posL.z)){pc.add(pt.posL);vpc++;}
+          if(pt.hasR && !isNaN(pt.posR.x) && !isNaN(pt.posR.y) && !isNaN(pt.posR.z)){pc.add(pt.posR);vpc++;}
+        });
         if(vpc>0) pc.divideScalar(vpc);
         else pc.set(0,0,0);
+        if(isNaN(pc.x) || isNaN(pc.y) || isNaN(pc.z)) pc.set(0,0,0);
         
         console.log(`[gen] word=${f.word} dom=${f.dom} scaleMult=${scaleMult.toFixed(2)} baseR=${baseR.toFixed(1)}`);
         
@@ -989,18 +994,28 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
         mainGroup.add(new THREE.Object3D());
         let box3 = new THREE.Box3().setFromObject(mainGroup);
         let bc = new THREE.Vector3(), bs = new THREE.Vector3();
-        if(!box3.isEmpty()){
+        if(!box3.isEmpty() && !isNaN(box3.min.x) && !isNaN(box3.max.x)){
             box3.getCenter(bc);
             box3.getSize(bs);
         } else {
             bc.copy(pc);
             bs.set(100, 100, 100);
         }
+        if(isNaN(bc.x) || isNaN(bc.y) || isNaN(bc.z)) bc.copy(pc);
+        if(isNaN(bs.x) || isNaN(bs.y) || isNaN(bs.z)) bs.set(100, 100, 100);
+        
         this.controls.target.copy(bc);
         
         let maxDim = Math.max(bs.x, bs.y, bs.z);
+        maxDim = isNaN(maxDim) ? 100 : maxDim;
         let camDist = Math.max(150, maxDim * 1.1);
+        camDist = isNaN(camDist) ? 200 : camDist;
+        
         this.camera.position.set(bc.x, bc.y + camDist * 0.3, bc.z + camDist * 1.1);
+        if(isNaN(this.camera.position.x) || isNaN(this.camera.position.y) || isNaN(this.camera.position.z)) {
+            this.camera.position.set(0, 50, 200);
+        }
+        
         this.camera.lookAt(bc);
         this.controls.update(); 
         this.camera.updateProjectionMatrix();
@@ -1982,6 +1997,7 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
           sceneGen.generate();
         } catch(e) {
           console.error('generate() threw:', e);
+          showErrorOverlay(e);
         }
 
         // Phase 3へ遷移
