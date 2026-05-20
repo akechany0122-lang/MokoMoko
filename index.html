@@ -271,6 +271,50 @@
   <div id="loading">GENERATING SPACE...</div>
 
   <script type="module">
+    // エラーハンドリング・画面オーバーレイ表示（デバッグ用）
+    window.onerror = function(message, source, lineno, colno, error) {
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.top = '0';
+      div.style.left = '0';
+      div.style.width = '100vw';
+      div.style.height = '100vh';
+      div.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+      div.style.color = 'white';
+      div.style.zIndex = '999999';
+      div.style.padding = '30px';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '14px';
+      div.style.whiteSpace = 'pre-wrap';
+      div.style.overflow = 'auto';
+      div.innerHTML = `<h2>[MokoMoko] Run-time JS Error Detected</h2>
+<p style="font-size:16px;color:#ffcccc;"><b>Message:</b> \${message}</p>
+<p><b>Source:</b> \${source}</p>
+<p><b>Line:</b> \${lineno} : <b>Col:</b> \${colno}</p>
+<p><b>Stack Trace:</b><br>\${error ? error.stack : 'N/A'}</p>`;
+      document.body.appendChild(div);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.top = '0';
+      div.style.left = '0';
+      div.style.width = '100vw';
+      div.style.height = '100vh';
+      div.style.backgroundColor = 'rgba(255, 0, 0, 0.95)';
+      div.style.color = 'white';
+      div.style.zIndex = '999999';
+      div.style.padding = '30px';
+      div.style.fontFamily = 'monospace';
+      div.style.fontSize = '14px';
+      div.style.whiteSpace = 'pre-wrap';
+      div.style.overflow = 'auto';
+      div.innerHTML = `<h2>[MokoMoko] Unhandled Promise Rejection</h2>
+<p style="font-size:16px;color:#ffcccc;"><b>Reason:</b> \${event.reason}</p>
+<p><b>Stack Trace:</b><br>\${event.reason && event.reason.stack ? event.reason.stack : 'N/A'}</p>`;
+      document.body.appendChild(div);
+    });
     import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
 
     // --- グローバル状態 ---
@@ -817,41 +861,47 @@ const ONO_DB={"ふわ":[30,78,46,153,2.2,0.28,54,1.12,0.55,0.37,2.4],"もち":[8
       }
 
       _createEnvMap(color) {
-        const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
-        pmremGenerator.compileEquirectangularShader();
-        
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        
-        const cTop = color.clone().multiplyScalar(1.5);
-        cTop.r = Math.max(0, Math.min(1, cTop.r));
-        cTop.g = Math.max(0, Math.min(1, cTop.g));
-        cTop.b = Math.max(0, Math.min(1, cTop.b));
-        const colTop = '#' + cTop.getHexString();
-        
-        const cBottom = color.clone().multiplyScalar(0.2);
-        cBottom.r = Math.max(0, Math.min(1, cBottom.r));
-        cBottom.g = Math.max(0, Math.min(1, cBottom.g));
-        cBottom.b = Math.max(0, Math.min(1, cBottom.b));
-        const colBottom = '#' + cBottom.getHexString();
-        grad.addColorStop(0, colTop);
-        grad.addColorStop(0.5, '#050508');
-        grad.addColorStop(1, colBottom);
-        
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.mapping = THREE.EquirectangularReflectionMapping;
-        
-        const envMap = pmremGenerator.fromEquirectangular(texture).texture;
-        texture.dispose();
-        pmremGenerator.dispose();
-        
-        return envMap;
+        try {
+          const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+          pmremGenerator.compileEquirectangularShader();
+          
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 128;
+          const ctx = canvas.getContext('2d');
+          const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          
+          const cTop = color.clone().multiplyScalar(1.5);
+          cTop.r = Math.max(0, Math.min(1, cTop.r));
+          cTop.g = Math.max(0, Math.min(1, cTop.g));
+          cTop.b = Math.max(0, Math.min(1, cTop.b));
+          const colTop = cTop.getStyle ? cTop.getStyle() : '#' + cTop.getHexString().padStart(6, '0');
+          
+          const cBottom = color.clone().multiplyScalar(0.2);
+          cBottom.r = Math.max(0, Math.min(1, cBottom.r));
+          cBottom.g = Math.max(0, Math.min(1, cBottom.g));
+          cBottom.b = Math.max(0, Math.min(1, cBottom.b));
+          const colBottom = cBottom.getStyle ? cBottom.getStyle() : '#' + cBottom.getHexString().padStart(6, '0');
+          
+          grad.addColorStop(0, colTop);
+          grad.addColorStop(0.5, '#050508');
+          grad.addColorStop(1, colBottom);
+          
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          
+          const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+          texture.dispose();
+          pmremGenerator.dispose();
+          
+          return envMap;
+        } catch (e) {
+          console.warn("Failed to create envMap, falling back to null:", e);
+          return null;
+        }
       }
 
       generate() {
